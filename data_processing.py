@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from sklearn.preprocessing import FunctionTransformer
 
 def load_and_clean_external_data(filepath):
     """Load and clean external data, handling missing values and date formatting."""
@@ -79,37 +78,51 @@ def add_temporal_features(df):
                                '2021-05-01', '2021-05-13', '2021-05-24', '2021-07-14', '2021-08-15'])
     df['is_holiday'] = df['date'].isin(holidays).astype(int)
     df['season'] = df['month'].map(lambda m: (m%12 + 3)//3)
+
+
+    # One-hot encoding for counter_id
+    df = pd.get_dummies(df, columns=["counter_id"], dummy_na=True, drop_first=True, prefix_sep=' ')
+    df.drop(columns=["counter_id nan"], inplace=True)
     
     return df
 
-def main():
+def process_data(train_path=None, test_path=None, external_data_path=None):
+    """Process either training or test data."""
     # Load external data
-    external_data = load_and_clean_external_data("bike_counters_Drion_Filisetti/external_data/external_data.csv")
-    
-    # Add COVID restrictions
+    external_data = load_and_clean_external_data(external_data_path)
     external_data = add_covid_restrictions(external_data)
-    
-    # Expand to hourly data
     external_data = expand_hourly_data(external_data)
     
-    # Load training data
-    train_data = pd.read_parquet("bike_counters_Drion_Filisetti/data/train.parquet")
+    result = {}
     
-    # Merge datasets
-    final_data = pd.merge(train_data, external_data, on='date', how='inner')
-    
-    # Add temporal features
-    final_data = add_temporal_features(final_data)
-    
-    # Sort by date and counter
-    final_data = final_data.sort_values(['date', 'counter_name'])
-    
-    return final_data
+    if train_path:
+        # Process training data
+        train_data = pd.read_parquet(train_path)
+        train_merged = pd.merge(train_data, external_data, on='date', how='inner')
+        train_processed = add_temporal_features(train_merged)
+        train_processed = train_processed.sort_values(['date', 'counter_name'])
 
-if __name__ == "__main__":
-    processed_data = main()
-    processed_data.drop(columns=['counter_name', 'site_id', 'site_name', 'bike_count', 'date', 'counter_installation_date', 'coordinates', 'counter_technical_id', 'log_bike_count', 'season'], inplace=True)
-    print("Data shape:", processed_data.shape)
-    print("\nSample of processed data:")
-    print(processed_data.dtypes)
-    processed_data.to_csv("processed_data.csv", index=False)
+        
+        # Drop unnecessary columns
+        train_processed.drop(columns=['counter_name', 'site_id', 'site_name', 'bike_count', 
+                                    'date', 'counter_installation_date', 'coordinates', 
+                                    'counter_technical_id', 'season'], inplace=True)
+        result['train'] = train_processed
+    
+    if test_path:
+        # Process test data
+        test_data = pd.read_parquet(test_path)
+        original_index = pd.Series(range(len(test_data)), index=test_data.index)
+        
+        test_merged = pd.merge(test_data, external_data, on='date', how='inner')
+        test_processed = add_temporal_features(test_merged)
+        
+        # Drop unnecessary columns
+        test_processed.drop(columns=['counter_name', 'site_id', 'site_name', 
+                                   'date', 'counter_installation_date', 'coordinates', 
+                                   'counter_technical_id', 'season'], inplace=True)
+        
+        test_processed['Id'] = original_index[test_processed.index]
+        result['test'] = test_processed
+    
+    return result
