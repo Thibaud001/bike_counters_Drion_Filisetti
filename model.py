@@ -7,11 +7,11 @@ from sklearn.metrics import mean_squared_error
 def train_and_evaluate(X, y):
     """Train and evaluate the model using time series cross-validation."""
     model = xgb.XGBRegressor(
-        n_estimators=1000,
-        learning_rate=0.01,
+        n_estimators=300,
+        learning_rate=0.13,
         max_depth=7,
-        subsample=0.8,
-        colsample_bytree=0.8,
+        subsample=1,
+        min_child_weight=3,
         random_state=0
     )
 
