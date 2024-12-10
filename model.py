@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-import xgboost as xgb
 from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import root_mean_squared_error
+import xgboost as xgb
 
-def train_and_evaluate(X, y):
+def train_and_evaluate(X: pd.DataFrame, y: pd.Series) -> xgb.XGBRegressor:
     """Train and evaluate the model using time series cross-validation."""
     model = xgb.XGBRegressor(
         n_estimators=300,
@@ -18,13 +18,13 @@ def train_and_evaluate(X, y):
     tscv = TimeSeriesSplit(n_splits=5)
     scores = []
 
-    for train_idx, test_idx in tscv.split(X):
-        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    for train_indices, test_indices in tscv.split(X):
+        X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
+        y_train, y_test = y.iloc[train_indices], y.iloc[test_indices]
         
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
-        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        rmse = root_mean_squared_error(y_test, y_pred)
         scores.append(rmse)
         print(f"Fold RMSE: {rmse:.4f}")
 
