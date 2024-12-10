@@ -28,3 +28,4 @@ ________________________________________________________________________________
 Nous sélectionnons ensuite uniquement les valeurs d'intérêts pour l'entraînement, stockées dans la variable external_data_train. Nous faisons de même pour l'échantillon test avec external_data_test
 
 Data processing : renommer add covid features
+Expliquer la colonne "north" (ou plutôt son absence dans les faits)

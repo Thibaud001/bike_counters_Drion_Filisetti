@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-def load_and_clean_external_data(filepath):
+def load_and_clean_external_data(filepath_weather, filepath_pollution):
     """Load and clean external data, handling missing values and date formatting."""
-    external_data = pd.read_csv(filepath)
+    external_data = pd.read_csv(filepath_weather)
     external_data_cleaned = external_data.dropna(axis=1, how='all')
+    pollution = pd.read_csv(filepath_pollution)
+    pollution['date'] = pd.to_datetime(pollution['date'])
 
     columns_of_interest = ["date", "etat_sol", "dd", "ff", "t", "u", "vv", "n", "ht_neige", "rr3"]
     external_data_sorted = external_data_cleaned[columns_of_interest].copy()
@@ -14,7 +16,7 @@ def load_and_clean_external_data(filepath):
     # Convert temperature from Kelvin to Celsius
     external_data_sorted.loc[:, "t"] = external_data_sorted["t"] - 273.15
 
-    return external_data_sorted
+    return external_data_sorted, pollution
 
 def add_covid_restrictions(df):
     """Add COVID-related restriction periods as features."""
@@ -32,7 +34,7 @@ def add_covid_restrictions(df):
             ('2021-01-16', '2021-04-03'),
             ('2021-05-04', '2021-05-19')
         ],
-        'holidays' : [
+        'holidays': [
             ('2020-10-17', '2020-11-02'),
             ('2020-12-19', '2021-01-02'),
             ('2021-02-13', '2021-03-01'),
@@ -48,6 +50,16 @@ def add_covid_restrictions(df):
             df.loc[mask, restriction_type] = 1
 
     return df
+
+def set_headings(df):
+    column_names = ["East", "South", "West"]
+    bearings = [(45, 135), (135, 225), (225, 315)]
+
+    for column_name, (low_bearing, high_bearing) in zip(column_names, bearings):
+        df[column_name] = 0
+        df.loc[(df['dd'] >= low_bearing) & (df['dd'] < high_bearing), column_name] = 1
+
+    return df.drop(columns=["dd"])
 
 def expand_hourly_data(df):
     """Create missing hourly data points by copying existing rows."""
@@ -82,10 +94,9 @@ def add_temporal_features(df):
     # Additional useful time features
     df['is_weekend'] = df['weekday'].isin([5, 6]).astype(int)
     holidays = pd.to_datetime(['2020-11-01', '2020-11-11', '2020-12-25', '2021-01-01', '2021-04-05',
-                               '2021-05-01', '2021-05-13', '2021-05-24', '2021-07-14', '2021-08-15'])
+                               '2021-05-01', '2021-05-13', '2021-05-24', '2021-07-14', '2021-08-15', '2021-11-01', '2021-11-11'])
     df['is_holiday'] = df['date'].isin(holidays).astype(int)
-    df['season'] = df['month'].map(lambda m: (m%12 + 3)//3)
-
+    df['season'] = df['month'].map(lambda m: (m % 12 + 3) // 3)
 
     # One-hot encoding for counter_id
     df = pd.get_dummies(df, columns=["counter_id"], dummy_na=True, drop_first=True, prefix_sep=' ')
@@ -93,12 +104,29 @@ def add_temporal_features(df):
 
     return df
 
+def unite_external_data(df, dg):
+    all_columns = set(df.columns).union(set(dg.columns))
+
+    for col in all_columns:
+        if col not in df.columns:
+            df[col] = 0
+        if col not in dg.columns:
+            dg[col] = 0
+
+    external_data_expanded = pd.concat([df, dg], ignore_index=True)
+    external_data_expanded = external_data_expanded.sort_values(by='date').reset_index(drop=True)
+    external_data_expanded = external_data_expanded.drop_duplicates()
+
+    return external_data_expanded
+
 def process_data(train_path=None, test_path=None, external_data_path=None):
     """Process either training or test data."""
     # Load external data
-    external_data = load_and_clean_external_data(external_data_path)
+    external_data_weather, external_data_pollution = load_and_clean_external_data(external_data_path, external_data_path_2)
+    external_data = unite_external_data(external_data_weather, external_data_pollution)
     external_data = add_covid_restrictions(external_data)
     external_data = expand_hourly_data(external_data)
+    external_data = set_headings(external_data)
 
     result = {}
 
@@ -109,11 +137,10 @@ def process_data(train_path=None, test_path=None, external_data_path=None):
         train_processed = add_temporal_features(train_merged)
         train_processed = train_processed.sort_values(['date', 'counter_name'])
 
-
         # Drop unnecessary columns
         train_processed.drop(columns=['counter_name', 'site_id', 'site_name', 'bike_count',
-                                    'date', 'counter_installation_date', 'coordinates',
-                                    'counter_technical_id', 'season'], inplace=True)
+                                      'date', 'counter_installation_date', 'coordinates',
+                                      'counter_technical_id', 'season'], inplace=True)
         result['train'] = train_processed
 
     if test_path:
@@ -126,8 +153,8 @@ def process_data(train_path=None, test_path=None, external_data_path=None):
 
         # Drop unnecessary columns
         test_processed.drop(columns=['counter_name', 'site_id', 'site_name',
-                                   'date', 'counter_installation_date', 'coordinates',
-                                   'counter_technical_id', 'season'], inplace=True)
+                                     'date', 'counter_installation_date', 'coordinates',
+                                     'counter_technical_id', 'season'], inplace=True)
 
         test_processed['Id'] = original_index[test_processed.index]
         result['test'] = test_processed
