@@ -11,17 +11,21 @@ def train_and_evaluate(X: pd.DataFrame, y: pd.Series) -> xgb.XGBRegressor:
         learning_rate=0.13,
         max_depth=7,
         subsample=1,
+
+
         min_child_weight=3,
+
         random_state=0
     )
 
     tscv = TimeSeriesSplit(n_splits=5)
     scores = []
 
+
     for train_indices, test_indices in tscv.split(X):
         X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
         y_train, y_test = y.iloc[train_indices], y.iloc[test_indices]
-        
+
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
         rmse = root_mean_squared_error(y_test, y_pred)
@@ -32,7 +36,7 @@ def train_and_evaluate(X: pd.DataFrame, y: pd.Series) -> xgb.XGBRegressor:
 
     # Train final model on all data
     model.fit(X, y)
-    
+
     # Print feature importance
     feature_importance = pd.DataFrame({
         'feature': X.columns,
@@ -41,5 +45,5 @@ def train_and_evaluate(X: pd.DataFrame, y: pd.Series) -> xgb.XGBRegressor:
 
     print("\nTop 10 important features:")
     print(feature_importance.head(10))
-    
+
     return model

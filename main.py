@@ -10,6 +10,7 @@ def main():
     train_path = base_path / "data" / "train.parquet"
     test_path = base_path / "data" / "final_test.parquet"
     external_data_path = base_path / "external_data" / "external_data.csv"
+    external_data_path_2 = base_path / "external_data" / "pollution_paris"
     submission_path = base_path / "submission.csv"
 
     # Process data
