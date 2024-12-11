@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from data_processing import (
     load_and_clean_external_data,
-    add_covid_restrictions,
+    add_covid_restrictions_holiday,
     expand_hourly_data,
     add_temporal_features,
 )
@@ -32,7 +32,7 @@ def load_data():
     
     # Process external data
     external_data = load_and_clean_external_data("bike_counters_Drion_Filisetti/external_data/external_data.csv")
-    external_data = add_covid_restrictions(external_data)
+    external_data = add_covid_restrictions_holiday(external_data)
     external_data = expand_hourly_data(external_data)
     
     # Merge datasets

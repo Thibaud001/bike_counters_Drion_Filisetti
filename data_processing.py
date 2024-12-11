@@ -16,9 +16,9 @@ def load_and_clean_external_data(filepath):
 
     return external_data_sorted
 
-def add_covid_restrictions(df):
-    """Add COVID-related restriction periods as features."""
-    covid_periods = {
+def add_covid_restrictions_holiday(df):
+    """Add COVID-related restriction and holiday periods as features."""
+    periods = {
         'Lockdown': [
             ('2020-10-30', '2020-12-15'),
             ('2021-04-03', '2021-05-04')
@@ -41,11 +41,11 @@ def add_covid_restrictions(df):
         ]
     }
 
-    for restriction_type, periods in covid_periods.items():
-        df[restriction_type] = 0
+    for type, periods in periods.items():
+        df[type] = 0
         for start_date, end_date in periods:
             mask = (df['date'] >= start_date) & (df['date'] < end_date)
-            df.loc[mask, restriction_type] = 1
+            df.loc[mask, type] = 1
 
     return df
 
@@ -106,7 +106,7 @@ def process_data(train_path=None, test_path=None, external_data_path=None):
     """Process either training or test data."""
     # Load external data
     external_data = load_and_clean_external_data(external_data_path)
-    external_data = add_covid_restrictions(external_data)
+    external_data = add_covid_restrictions_holiday(external_data)
     external_data = expand_hourly_data(external_data)
     external_data = set_headings(external_data)
 
