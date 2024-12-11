@@ -40,7 +40,7 @@ hard-curfew
 bank_holidays (named "is_holidays" in the actual model)
 holidays (named "vacations" in the actual model)
 
-### External_data_sorted
+### Final.py
 
 The actual model runs directly by pressing play in the main.py file. It is comprised of four distinct models that work in conjunction :
 
