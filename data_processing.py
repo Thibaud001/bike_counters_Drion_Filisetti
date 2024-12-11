@@ -16,7 +16,7 @@ def load_and_clean_external_data(filepath):
 
     return external_data_sorted
 
-def add_covid_restrictions_holiday(df):
+def add_covid_restrictions_vacations(df):
     """Add COVID-related restriction and holiday periods as features."""
     periods = {
         'Lockdown': [
@@ -32,7 +32,7 @@ def add_covid_restrictions_holiday(df):
             ('2021-01-16', '2021-04-03'),
             ('2021-05-04', '2021-05-19')
         ],
-        'holidays' : [
+        'vacations' : [
             ('2020-10-17', '2020-11-02'),
             ('2020-12-19', '2021-01-02'),
             ('2021-02-13', '2021-03-01'),
@@ -91,8 +91,8 @@ def add_temporal_features(df):
 
     # Additional useful time features
     df['is_weekend'] = df['weekday'].isin([5, 6]).astype(int)
-    holidays = pd.to_datetime(['2020-11-01', '2020-11-11', '2020-12-25', '2021-01-01', '2021-04-05',
-                               '2021-05-01', '2021-05-13', '2021-05-24', '2021-07-14', '2021-08-15', '2021-11-01', '2021-11-11'])
+    holidays = pd.to_datetime(['2020-11-01', '2020-11-11', '2020-12-25', '2021-01-01', '2021-04-05', '2021-05-01',
+                               '2021-05-13', '2021-05-24', '2021-07-14', '2021-08-15', '2021-11-01', '2021-11-11'])
     df['is_holiday'] = df['date'].isin(holidays).astype(int)
     df['season'] = df['month'].map(lambda m: (m%12 + 3)//3)
 
@@ -106,7 +106,7 @@ def process_data(train_path=None, test_path=None, external_data_path=None):
     """Process either training or test data."""
     # Load external data
     external_data = load_and_clean_external_data(external_data_path)
-    external_data = add_covid_restrictions_holiday(external_data)
+    external_data = add_covid_restrictions_vacations(external_data)
     external_data = expand_hourly_data(external_data)
     external_data = set_headings(external_data)
 
