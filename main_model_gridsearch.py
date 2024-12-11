@@ -4,9 +4,10 @@ import xgboost as xgb
 from pathlib import Path
 from data_processing import (
     load_and_clean_external_data,
-    add_covid_restrictions,
+    add_covid_restrictions_holiday,
     expand_hourly_data,
     add_temporal_features,
+    set_headings
 )
 
 
@@ -28,7 +29,8 @@ def load_test_data(test_path, external_data_path):
 
     # Process external data
     external_data = load_and_clean_external_data(external_data_path)
-    external_data = add_covid_restrictions(external_data)
+    external_data = add_covid_restrictions_holiday(external_data)
+    external_data = set_headings(external_data)
     external_data = expand_hourly_data(external_data)
 
     # Merge datasets
@@ -91,7 +93,7 @@ def main():
     BASE_PATH = Path("bike_counters_Drion_Filisetti")
     TEST_PATH = BASE_PATH / "data" / "final_test.parquet"
     EXTERNAL_DATA_PATH = BASE_PATH / "external_data" / "external_data.csv"
-    MODEL_PATH = BASE_PATH / "model.json"
+    MODEL_PATH = BASE_PATH / "outputs" / "model_optimized.json"
     OUTPUT_PATH = BASE_PATH / "submission.csv"
 
     # Load and process data
